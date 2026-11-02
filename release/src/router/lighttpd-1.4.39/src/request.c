@@ -9,6 +9,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <errno.h>
+
+unsigned int get_free_mem(); /* stat_cache.c: evita la declaracion implicita (int) */
 
 static int request_check_hostname(server *srv, connection *con, buffer *host) {
 	enum { DOMAINLABEL, TOPLABEL } stage = TOPLABEL;
@@ -294,10 +297,11 @@ static int request_file_size_check(char * content) {
 		char *file_content = strstr(content, "Content-Length:");
 
 		filesize_pos = (file_content - content) + 15;
-		strncpy(filesize, content + filesize_pos , 11);
-		filesize[11] = '\0';
+		strncpy(filesize, content + filesize_pos , 20);
+		filesize[20] = '\0';
 
-		if(get_free_mem() < (int) strtol(filesize, NULL, 10) ) {
+		/* comparar en 64 bits: el (int) strtol() anterior se saturaba en 2 GB */
+		if((long long) get_free_mem() < strtoll(filesize, NULL, 10) ) {
 			return 0;
 		}
 	}
@@ -851,7 +855,7 @@ int http_request_parse(server *srv, connection *con) {
 
 							} else if (cmp > 0 && 0 == (cmp = buffer_caseless_compare(CONST_BUF_LEN(ds->key), CONST_STR_LEN("Content-Length")))) {
 								char *err;
-								unsigned long int r;
+								long long r;
 								size_t j, jlen;
 
 								if (con_length_set) {
@@ -884,11 +888,12 @@ int http_request_parse(server *srv, connection *con) {
 									}
 								}
 
-								r = strtoul(ds->value->ptr, &err, 10);
+								errno = 0;
+								r = strtoll(ds->value->ptr, &err, 10);
 
-								if (*err == '\0') {
+								if (*err == '\0' && errno != ERANGE && r >= 0 && (long long)(off_t)r == r) {
 									con_length_set = 1;
-									con->request.content_length = r;
+									con->request.content_length = (off_t)r;
 								} else {
 									log_error_write(srv, __FILE__, __LINE__, "sbs",
 											"content-length broken:", ds->value, "-> 400");
@@ -1165,13 +1170,10 @@ int http_request_parse(server *srv, connection *con) {
 
 	/* check if we have read post data */
 	if (con_length_set) {
-		/* don't handle more the SSIZE_MAX bytes in content-length */
-		if (con->request.content_length > SSIZE_MAX) {
-			con->http_status = 413;
+		/* content_length es off_t (64 bits con LFS): ya no se limita a SSIZE_MAX (2 GB en ARM 32 bits) */
+		if (con->request.content_length < 0) {
+			con->http_status = 400;
 			con->keep_alive = 0;
-
-			log_error_write(srv, __FILE__, __LINE__, "sos",
-					"request-size too long:", (off_t) con->request.content_length, "-> 413");
 			return 0;
 		}
 

@@ -6378,6 +6378,12 @@ libvorbis/stamp-h1: libogg
 		--with-ogg-libraries="$(TOP)/libogg/src/.libs"
 	touch $@
 	touch libvorbis/aclocal.m4
+	# git checkout deja aclocal.m4/configure.ac con mtime igual o mas nuevo que los
+	# Makefile.in: se tocan los generados en orden para que make no intente
+	# regenerarlos con automake-1.10 (no existe en el contenedor de CI)
+	cd libvorbis && touch configure config.h.in && \
+		find . -name Makefile.in -exec touch {} + && \
+		touch config.status && find . -name Makefile -exec touch {} + && touch config.h stamp-h1
 
 libvorbis: libvorbis/stamp-h1
 	@$(MAKE) $(PARALLEL_BUILD) -C libvorbis/lib all

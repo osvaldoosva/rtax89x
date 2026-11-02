@@ -177,7 +177,7 @@ typedef struct {
 	array  *headers;
 
 	/* CONTENT */
-	size_t content_length; /* returned by strtoul() */
+	off_t content_length; /* 64-bit (LFS): admite cuerpos > 2 GB en ARM de 32 bits */
 
 	/* internal representation */
 	int     accept_encoding;
