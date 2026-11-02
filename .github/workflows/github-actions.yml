@@ -1,6 +1,9 @@
 name: Build testing 
 run-name: "Building images 🚀"
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 jobs:          
     build-job:
       name: Build
@@ -16,7 +19,7 @@ jobs:
           MODELCFG: ${{ matrix.cfg.model }}
           SDK: ${{ matrix.cfg.sdk }}
           SKIP_BUILD: ${{ matrix.cfg.skip }}
-          GIT_REPO: "https://github.com/SWRT-dev/rtax89x.git"
+          GIT_REPO: "https://github.com/${{ github.repository }}.git"
           PROJECT_DIR: "/project/rtax89x"
           PROJECTBASEDIR: "/project" # REMOVE_ME: Fixes https://github.com/SonarSource/sonarcloud-github-action/pull/58
         options: --user docker 
@@ -48,7 +51,8 @@ jobs:
                 echo "Fetching code from branch $BRANCH"
             fi
 
-            if git clone --depth 1 --branch "${TAG:-$BRANCH}" "$GIT_REPO"; then
+            # compila TU repo (github.repository) en la rama/tag que disparo el workflow; antes clonaba SWRT-dev/rtax89x
+            if git clone --depth 1 --branch "${TAG:-$BRANCH}" "$GIT_REPO" rtax89x; then
                 echo "Code fetched successfully."
             else
                 echo "Failed to fetch code. Check the repository and settings."
@@ -79,3 +83,11 @@ jobs:
 
             echo "----- BUILD ${MODELCFG}-----"
             make "${MODELCFG}"
+        - name: "Upload firmware"
+          if: matrix.cfg.skip == false
+          uses: actions/upload-artifact@v4
+          with:
+            name: firmware-${{ matrix.cfg.model }}-${{ github.sha }}
+            path: /project/rtax89x/release/${{ matrix.cfg.sdk }}/image/*.trx
+            if-no-files-found: error
+            retention-days: 14

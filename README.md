@@ -1,3 +1,5 @@
+> **Español:** guía para compilar, modificar y recuperar el router en [doc/es/GUIA.md](doc/es/GUIA.md).
+
 
 注意：
 =
