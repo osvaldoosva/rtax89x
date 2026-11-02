@@ -18,3 +18,20 @@ ASUS, sustituye el binario y reempaqueta. Contrastado con el código de este rep
 Conclusión: es más fiable compilar el firmware completo desde este repo (`./build.sh` o GitHub
 Actions) con el parche de lighttpd aplicado en el código fuente, en lugar de trasplantar
 binarios en el `.trx` oficial.
+
+## Versión corregida: `tools/ax89x_build.sh`
+
+Si prefieres conservar el firmware **oficial** de ASUS (`RT-AX89X_3_0_0_4_388_33812-gab9863d.trx`)
+y cambiar solo AiCloud, usa `tools/ax89x_build.sh` desde este repo (`./tools/ax89x_build.sh`,
+con tu usuario, no root). Igual que el original, necesita en Descargas el `.trx` oficial y el
+GPL de ASUS del RT-AX89X. Cambios respecto al original:
+
+* Paso 0: instala las librerías de 32 bits e instala el toolchain desde `tools/` en
+  `/opt/openwrt-gcc463.arm`; enlaza `/bin/sh` a bash.
+* Paso 4: aplica exactamente el mismo parche de lighttpd que este repo (texto exacto; si el GPL
+  no coincide, se detiene sin tocar nada) y solo comprueba que LFS ya esté activo.
+* Paso 5: compila desde `release/src-qca-ipq806x` (comprueba `BUILD_NAME="RT-AX89U"`) y toma
+  `lighttpd` y `mod_*.so` de `src/.libs`, haciendo `strip` como el Makefile de ASUS.
+* Paso 6: verifica `strtoll` en el binario nuevo.
+* Los pasos 7–9 (reempaquetado, autoprueba byte a byte de la cabecera y comparación de la lista
+  de archivos) no cambian.

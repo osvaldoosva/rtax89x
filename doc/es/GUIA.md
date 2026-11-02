@@ -75,7 +75,8 @@ router**; no se pudo ejecutar aquí.
 4. Tras volver a firmware oficial, haz *reset de fábrica* si ves comportamientos raros.
 5. No apagues el router durante una actualización. Prueba primero cambios pequeños.
 
-## 6. Sobre `ax89x_build.sh` (método de parchear el `.trx` oficial)
+## 6. Alternativa: firmware oficial de ASUS + solo AiCloud cambiado
 
-Ver `doc/es/REVISION_ax89x_build.md`. Resumen: con este repo ya no es necesario, y tal como
-estaba se habría detenido en el paso 4 o en el 5.
+`tools/ax89x_build.sh` parte del `.trx` oficial 388_33812, recompila solo lighttpd con el
+parche de la sección 4 y reempaqueta el firmware, manteniendo todo lo demás de fábrica.
+Detalles y fallos corregidos del script original: `doc/es/REVISION_ax89x_build.md`.
